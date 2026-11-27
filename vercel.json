@@ -3,6 +3,9 @@
   "functions": {
     "api/index.js": {
       "includeFiles": "data/db.json"
+    },
+    "server.js": {
+      "includeFiles": "{data/db.json,public/**}"
     }
   },
   "rewrites": [

@@ -382,27 +382,34 @@ export async function handleApi(req, res, pathname, dbPath = DEFAULT_DB_PATH) {
 
 async function serveStatic(res, pathname) {
   const safePath = pathname === '/' ? '/index.html' : pathname;
-  const resolved = path.resolve(PUBLIC_DIR, `.${safePath}`);
-  if (!resolved.startsWith(PUBLIC_DIR)) {
-    res.writeHead(403);
-    res.end('Forbidden');
-    return;
+  const candidateDirs = [PUBLIC_DIR, path.join(process.cwd(), 'public')];
+
+  for (const baseDir of candidateDirs) {
+    const resolved = path.resolve(baseDir, `.${safePath}`);
+    if (!resolved.startsWith(baseDir)) {
+      res.writeHead(403);
+      res.end('Forbidden');
+      return;
+    }
+
+    try {
+      const stat = await fs.stat(resolved);
+      if (stat.isDirectory()) {
+        return serveStatic(res, path.join(safePath, 'index.html'));
+      }
+      const ext = path.extname(resolved).toLowerCase();
+      const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+      const content = await fs.readFile(resolved);
+      res.writeHead(200, { 'Content-Type': contentType });
+      res.end(content);
+      return;
+    } catch {
+      // try next baseDir
+    }
   }
 
-  try {
-    const stat = await fs.stat(resolved);
-    if (stat.isDirectory()) {
-      return serveStatic(res, path.join(safePath, 'index.html'));
-    }
-    const ext = path.extname(resolved).toLowerCase();
-    const contentType = MIME_TYPES[ext] || 'application/octet-stream';
-    const content = await fs.readFile(resolved);
-    res.writeHead(200, { 'Content-Type': contentType });
-    res.end(content);
-  } catch {
-    res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-    res.end('Not Found');
-  }
+  res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+  res.end('Not Found');
 }
 
 export function createHandler(dbPath = DEFAULT_DB_PATH) {
@@ -420,6 +427,8 @@ export function createHandler(dbPath = DEFAULT_DB_PATH) {
 export function createServer(dbPath = DEFAULT_DB_PATH) {
   return http.createServer(createHandler(dbPath));
 }
+
+export default createHandler(DEFAULT_DB_PATH);
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const port = Number(process.env.PORT || 4173);
