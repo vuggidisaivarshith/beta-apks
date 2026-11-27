@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="obsidian">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DWARAKA Software Labs — Beta Release Portal</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <svg class="brand-logo" viewBox="0 0 36 36" width="36" height="36" aria-hidden="true">
+          <defs>
+            <linearGradient id="dsl-grad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="var(--accent)" />
+              <stop offset="100%" stop-color="var(--accent-2)" />
+            </linearGradient>
+          </defs>
+          <rect x="2" y="2" width="32" height="32" rx="8" fill="url(#dsl-grad)" opacity="0.18" stroke="url(#dsl-grad)" stroke-width="1.5" />
+          <path d="M11 10h6.5c4.5 0 7.5 3.1 7.5 8s-3 8-7.5 8H11V10zm3.5 3.2v9.6h2.8c2.6 0 4.2-1.8 4.2-4.8s-1.6-4.8-4.2-4.8h-2.8z" fill="url(#dsl-grad)" />
+        </svg>
+        <div class="brand-text">
+          <span class="brand-name">DWARAKA Software Labs</span>
+          <span class="brand-sub">Beta Release &amp; QA Command Center</span>
+        </div>
+      </div>
+
+      <nav class="primary-nav" aria-label="Portal sections">
+        <button type="button" class="nav-tab is-active" data-view="releases">
+          Beta Releases <span class="count-pill" id="nav-count-releases">0</span>
+        </button>
+        <button type="button" class="nav-tab" data-view="feedback">
+          Bug Triage <span class="count-pill" id="nav-count-feedback">0</span>
+        </button>
+        <button type="button" class="nav-tab" data-view="team">
+          Beta Team <span class="count-pill" id="nav-count-team">0</span>
+        </button>
+        <button type="button" class="nav-tab" data-view="activity">
+          Activity Log
+        </button>
+      </nav>
+
+      <div class="topbar-actions">
+        <button type="button" class="btn btn-ghost" popovertarget="theme-popover" id="theme-trigger" aria-label="Switch portal theme">
+          <span class="theme-dot" aria-hidden="true"></span>
+          <span id="current-theme-label">Obsidian</span>
+        </button>
+
+        <div id="theme-popover" popover="auto" class="popover-menu">
+          <div class="popover-header">Portal Theme</div>
+          <button type="button" class="popover-item" data-theme-choice="obsidian">
+            <span class="swatch swatch-obsidian" aria-hidden="true"></span>
+            <span>
+              <strong>Dwaraka Obsidian</strong>
+              <small>Deep indigo &amp; amber dark</small>
+            </span>
+          </button>
+          <button type="button" class="popover-item" data-theme-choice="daylight">
+            <span class="swatch swatch-daylight" aria-hidden="true"></span>
+            <span>
+              <strong>Dwaraka Daylight</strong>
+              <small>Crisp alabaster &amp; cobalt</small>
+            </span>
+          </button>
+          <button type="button" class="popover-item" data-theme-choice="emerald">
+            <span class="swatch swatch-emerald" aria-hidden="true"></span>
+            <span>
+              <strong>Terminal Emerald</strong>
+              <small>QA dark &amp; matrix green</small>
+            </span>
+          </button>
+        </div>
+
+        <button type="button" class="btn btn-outline" id="role-toggle-btn">
+          <span class="role-badge" id="role-badge">Tester Mode</span>
+        </button>
+
+        <button type="button" class="btn btn-primary" id="publish-release-btn">
+          + Publish Beta
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero-strip">
+      <div class="hero-copy">
+        <h1>Early-Access Beta Websites</h1>
+        <p id="hero-subtitle">Launch staging builds, run QA smoke checklists, and submit environment-tagged bug reports directly to DWARAKA engineering.</p>
+      </div>
+      <div class="kpi-grid" aria-label="Portal metrics">
+        <div class="kpi-card">
+          <span class="kpi-label">Active Beta Sites</span>
+          <strong class="kpi-value" id="kpi-active-sites">0</strong>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">QA Checklist Pass</span>
+          <strong class="kpi-value" id="kpi-qa-pass">0%</strong>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Open Issues</span>
+          <strong class="kpi-value" id="kpi-open-bugs">0</strong>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Beta Testers</span>
+          <strong class="kpi-value" id="kpi-team-count">0</strong>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW: RELEASES -->
+    <section id="view-releases" class="view-panel">
+      <div class="toolbar">
+        <search class="search-box">
+          <label for="release-search" class="sr-only">Search beta websites</label>
+          <input type="search" id="release-search" placeholder="Search by site name, version, branch, or tag...">
+        </search>
+        <div class="filter-pills" role="group" aria-label="Filter by release stage">
+          <button type="button" class="pill is-active" data-stage-filter="All">All Stages</button>
+          <button type="button" class="pill" data-stage-filter="Alpha">Alpha</button>
+          <button type="button" class="pill" data-stage-filter="Closed Beta">Closed Beta</button>
+          <button type="button" class="pill" data-stage-filter="Open Beta">Open Beta</button>
+          <button type="button" class="pill" data-stage-filter="RC">RC</button>
+        </div>
+      </div>
+
+      <div id="releases-grid" class="releases-grid"></div>
+    </section>
+
+    <!-- VIEW: BUG TRIAGE / FEEDBACK -->
+    <section id="view-feedback" class="view-panel" hidden>
+      <div class="toolbar">
+        <div class="filter-pills" role="group" aria-label="Filter feedback by status">
+          <button type="button" class="pill is-active" data-fb-filter="All">All Reports</button>
+          <button type="button" class="pill" data-fb-filter="Open">Open</button>
+          <button type="button" class="pill" data-fb-filter="In Review">In Review</button>
+          <button type="button" class="pill" data-fb-filter="Fixed">Fixed</button>
+        </div>
+        <button type="button" class="btn btn-primary" id="new-feedback-btn">+ Submit Bug / Feedback</button>
+      </div>
+      <div id="feedback-list" class="feedback-list"></div>
+    </section>
+
+    <!-- VIEW: BETA TEAM -->
+    <section id="view-team" class="view-panel" hidden>
+      <div class="team-header-card">
+        <div>
+          <h2>Beta Team Access &amp; Invite Code</h2>
+          <p>Share the active invite code with external or internal testers to grant Closed Beta portal access.</p>
+        </div>
+        <div class="invite-box">
+          <code id="invite-code-display">DSL-BETA-942</code>
+          <button type="button" class="btn btn-ghost btn-sm" id="copy-invite-btn">Copy</button>
+          <button type="button" class="btn btn-outline btn-sm admin-only" id="rotate-invite-btn" hidden>Rotate Code</button>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <h3>Rostered Beta Testers</h3>
+        <button type="button" class="btn btn-primary admin-only" id="add-member-btn" hidden>+ Add Team Member</button>
+      </div>
+      <div id="team-table-wrap" class="table-wrap"></div>
+    </section>
+
+    <!-- VIEW: ACTIVITY LOG -->
+    <section id="view-activity" class="view-panel" hidden>
+      <div class="toolbar">
+        <h2>Release &amp; QA Audit Trail</h2>
+      </div>
+      <ol id="activity-feed" class="activity-feed"></ol>
+    </section>
+  </main>
+
+  <footer class="portal-footer">
+    <p>&copy; 2026 DWARAKA Software Labs &middot; Internal &amp; Beta Testing Infrastructure &middot; All builds are pre-production.</p>
+  </footer>
+
+  <!-- MODAL: LIVE PREVIEW & QA INSPECTOR -->
+  <dialog id="inspector-dialog" class="dialog-xl" closedby="any" aria-labelledby="inspector-title">
+    <div class="dialog-header">
+      <div>
+        <span class="badge-row" id="inspector-badges"></span>
+        <h1 id="inspector-title">Beta Website Inspector</h1>
+      </div>
+      <form method="dialog">
+        <button class="btn btn-ghost" value="close" aria-label="Close inspector" autofocus>Close</button>
+      </form>
+    </div>
+
+    <div class="inspector-bar">
+      <div class="inspector-url">
+        <span class="mono-label">TARGET URL</span>
+        <a id="inspector-external-link" href="#" target="_blank" rel="noopener noreferrer">https://example.com</a>
+      </div>
+      <div class="viewport-switcher" role="group" aria-label="Preview viewport size">
+        <button type="button" class="pill is-active" data-vp="100%">Desktop</button>
+        <button type="button" class="pill" data-vp="768px">Tablet (768px)</button>
+        <button type="button" class="pill" data-vp="375px">Mobile (375px)</button>
+      </div>
+      <button type="button" class="btn btn-primary btn-sm" id="inspector-report-bug-btn">Report Bug on Build</button>
+    </div>
+
+    <div class="inspector-body">
+      <div class="preview-stage">
+        <iframe id="inspector-iframe" title="Live beta website preview" sandbox="allow-scripts allow-forms allow-same-origin allow-popups"></iframe>
+        <p class="preview-note">Note: If the target beta site blocks embedding via <code>X-Frame-Options</code>, use the Target URL link above to test in a dedicated tab.</p>
+      </div>
+      <aside class="inspector-sidebar">
+        <section class="sidebar-block">
+          <h2>QA Smoke Checklist</h2>
+          <ul id="inspector-checklist" class="checklist"></ul>
+        </section>
+        <details class="sidebar-block" open>
+          <summary>Build Metadata &amp; Changelog</summary>
+          <div id="inspector-meta" class="meta-kv"></div>
+          <ul id="inspector-changelog" class="changelog-list"></ul>
+        </details>
+      </aside>
+    </div>
+  </dialog>
+
+  <!-- MODAL: PUBLISH / EDIT RELEASE -->
+  <dialog id="release-dialog" class="dialog-md" closedby="any" aria-labelledby="release-dialog-title">
+    <div class="dialog-header">
+      <h1 id="release-dialog-title">Publish Beta Website</h1>
+      <form method="dialog">
+        <button class="btn btn-ghost" value="cancel" aria-label="Close">Close</button>
+      </form>
+    </div>
+    <form id="release-form" class="modal-form">
+      <input type="hidden" id="rel-id">
+      <div class="form-grid">
+        <label>
+          Website / App Name *
+          <input type="text" id="rel-name" required placeholder="e.g. DwarakaPay Checkout Web" autofocus>
+        </label>
+        <label>
+          Version Tag *
+          <input type="text" id="rel-version" required placeholder="e.g. v0.5.0-beta">
+        </label>
+        <label>
+          Target Staging URL *
+          <input type="url" id="rel-url" required placeholder="https://beta-app.dwarakalabs.in">
+        </label>
+        <label>
+          Release Stage
+          <select id="rel-stage">
+            <option value="Alpha">Alpha</option>
+            <option value="Closed Beta" selected>Closed Beta</option>
+            <option value="Open Beta">Open Beta</option>
+            <option value="RC">RC</option>
+          </select>
+        </label>
+        <label>
+          Release Owner
+          <input type="text" id="rel-owner" placeholder="e.g. Arjun Rao">
+        </label>
+        <label>
+          Git Branch / Build Hash
+          <input type="text" id="rel-branch" placeholder="release/beta-0.5">
+        </label>
+      </div>
+      <label>
+        Summary &amp; Testing Focus *
+        <textarea id="rel-summary" rows="2" required placeholder="What should the beta team focus on testing in this build?"></textarea>
+      </label>
+      <label>
+        Changelog Items (one per line)
+        <textarea id="rel-changelog" rows="3" placeholder="Added new dashboard charts&#10;Fixed mobile drawer scroll"></textarea>
+      </label>
+      <label>
+        QA Checklist Items (one per line)
+        <textarea id="rel-checklist" rows="3" placeholder="Verify login flow on mobile&#10;Check dark mode contrast"></textarea>
+      </label>
+      <label>
+        Tags (comma separated)
+        <input type="text" id="rel-tags" placeholder="fintech, web-app, ui">
+      </label>
+      <div class="dialog-footer">
+        <button type="button" class="btn btn-ghost" id="release-cancel-btn">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="release-submit-btn">Publish Beta Build</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- MODAL: SUBMIT BUG / FEEDBACK -->
+  <dialog id="feedback-dialog" class="dialog-md" closedby="any" aria-labelledby="feedback-dialog-title">
+    <div class="dialog-header">
+      <h1 id="feedback-dialog-title">Submit Bug / Beta Feedback</h1>
+      <form method="dialog">
+        <button class="btn btn-ghost" value="cancel" aria-label="Close">Close</button>
+      </form>
+    </div>
+    <form id="feedback-form" class="modal-form">
+      <label>
+        Beta Website *
+        <select id="fb-release-id" required></select>
+      </label>
+      <label>
+        Issue / Feedback Title *
+        <input type="text" id="fb-title" required placeholder="Short summary of the bug or suggestion" autofocus>
+      </label>
+      <div class="form-grid">
+        <label>
+          Severity
+          <select id="fb-severity">
+            <option value="Critical">Critical</option>
+            <option value="High">High</option>
+            <option value="Medium" selected>Medium</option>
+            <option value="Low">Low</option>
+          </select>
+        </label>
+        <label>
+          Category
+          <select id="fb-category">
+            <option value="Bug">Bug</option>
+            <option value="UI/UX">UI/UX</option>
+            <option value="Performance">Performance</option>
+            <option value="Enhancement">Enhancement</option>
+          </select>
+        </label>
+        <label>
+          Your Name *
+          <input type="text" id="fb-reporter" required placeholder="e.g. Meera Krishnan">
+        </label>
+        <label>
+          Detected Environment
+          <input type="text" id="fb-env" placeholder="Browser / OS">
+        </label>
+      </div>
+      <label>
+        Steps to Reproduce / Details
+        <textarea id="fb-desc" rows="3" placeholder="1. Go to...&#10;2. Click...&#10;3. Observe..."></textarea>
+      </label>
+      <div class="dialog-footer">
+        <button type="button" class="btn btn-ghost" id="feedback-cancel-btn">Cancel</button>
+        <button type="submit" class="btn btn-primary">Submit Report</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- MODAL: ADMIN UNLOCK -->
+  <dialog id="admin-dialog" class="dialog-sm" closedby="any" aria-labelledby="admin-dialog-title">
+    <div class="dialog-header">
+      <h1 id="admin-dialog-title">Unlock Labs Lead Mode</h1>
+      <form method="dialog">
+        <button class="btn btn-ghost" value="cancel" aria-label="Close">Close</button>
+      </form>
+    </div>
+    <form id="admin-form" class="modal-form">
+      <p class="helper-text">Enter the DWARAKA Labs Lead PIN to publish builds, promote stages, triage bugs, and manage the beta roster. <br><span class="mono-hint">Default PIN: <code>DWARAKA-2026</code></span></p>
+      <label>
+        Admin PIN
+        <input type="password" id="admin-pin-input" required autocomplete="current-password" placeholder="Enter PIN" autofocus>
+      </label>
+      <p id="admin-error" class="form-error" hidden>Invalid PIN. Please try again.</p>
+      <div class="dialog-footer">
+        <button type="button" class="btn btn-ghost" id="admin-cancel-btn">Cancel</button>
+        <button type="submit" class="btn btn-primary">Unlock Lead Access</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- MODAL: ADD TEAM MEMBER -->
+  <dialog id="member-dialog" class="dialog-sm" closedby="any" aria-labelledby="member-dialog-title">
+    <div class="dialog-header">
+      <h1 id="member-dialog-title">Add Beta Team Member</h1>
+      <form method="dialog">
+        <button class="btn btn-ghost" value="cancel" aria-label="Close">Close</button>
+      </form>
+    </div>
+    <form id="member-form" class="modal-form">
+      <label>
+        Full Name *
+        <input type="text" id="mem-name" required placeholder="e.g. Aditya Kulkarni" autofocus>
+      </label>
+      <label>
+        Email Address *
+        <input type="email" id="mem-email" required placeholder="aditya@dwarakalabs.in">
+      </label>
+      <label>
+        Role
+        <select id="mem-role">
+          <option value="Beta Tester">Beta Tester</option>
+          <option value="QA Lead">QA Lead</option>
+          <option value="Stakeholder">Stakeholder</option>
+        </select>
+      </label>
+      <div class="dialog-footer">
+        <button type="button" class="btn btn-ghost" id="member-cancel-btn">Cancel</button>
+        <button type="submit" class="btn btn-primary">Add to Roster</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- MODAL: CONFIRM ARCHIVE -->
+  <dialog id="confirm-dialog" class="dialog-sm" closedby="closerequest" aria-labelledby="confirm-title">
+    <h1 id="confirm-title">Archive Beta Release?</h1>
+    <p id="confirm-message" class="helper-text">This will remove the beta website from the active portal.</p>
+    <form method="dialog" class="dialog-footer">
+      <button class="btn btn-ghost" value="cancel" autofocus>Cancel</button>
+      <button class="btn btn-danger" value="confirm">Archive Release</button>
+    </form>
+  </dialog>
+
+  <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

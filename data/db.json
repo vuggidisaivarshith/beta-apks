@@ -1,0 +1,171 @@
+{
+  "settings": {
+    "labName": "DWARAKA Software Labs",
+    "portalTagline": "Early-Access Beta Release & QA Command Center",
+    "adminPin": "DWARAKA-2026",
+    "inviteCode": "DSL-BETA-942"
+  },
+  "releases": [
+    {
+      "id": "rel-dwarakapay-042",
+      "name": "DwarakaPay Checkout Web",
+      "slug": "dwarakapay-web",
+      "version": "v0.4.2-beta",
+      "stage": "Closed Beta",
+      "health": "Healthy",
+      "url": "https://example.com",
+      "repoBranch": "release/beta-0.4.2",
+      "buildHash": "a8f31c9",
+      "owner": "Arjun Rao",
+      "summary": "Next-gen UPI & card checkout web flow with instant mandate verification and zero-redirect modal UX.",
+      "changelog": [
+        "Added UPI AutoPay mandate preview modal",
+        "Reduced checkout bundle size by 28% via code splitting",
+        "Fixed Safari 18 autofill overlap on CVV input"
+      ],
+      "tags": ["fintech", "checkout", "payments", "web-app"],
+      "accessLevel": "Beta Team Only",
+      "checklist": [
+        { "id": "chk-1", "label": "Verify UPI QR generation on desktop & mobile viewports", "status": "pass", "tester": "Meera K." },
+        { "id": "chk-2", "label": "Test card validation error states with screen reader", "status": "pass", "tester": "Vikram S." },
+        { "id": "chk-3", "label": "Confirm 3DS2 fallback redirect returns to receipt page", "status": "pending", "tester": null }
+      ],
+      "createdAt": "2026-11-24T09:30:00.000Z",
+      "updatedAt": "2026-11-26T16:15:00.000Z"
+    },
+    {
+      "id": "rel-vedadocs-091",
+      "name": "VedaDocs AI Knowledge Portal",
+      "slug": "vedadocs-ai",
+      "version": "v0.9.1-rc1",
+      "stage": "RC",
+      "health": "Healthy",
+      "url": "https://example.org",
+      "repoBranch": "rc/0.9.1",
+      "buildHash": "f42d0e1",
+      "owner": "Priya Nair",
+      "summary": "Semantic documentation search and interactive API playground for Dwaraka enterprise SDKs.",
+      "changelog": [
+        "Upgraded streaming markdown renderer with syntax highlighting",
+        "Added keyboard shortcut Cmd+K for instant doc search",
+        "Improved citation anchor scrolling accuracy"
+      ],
+      "tags": ["ai", "docs", "search", "enterprise"],
+      "accessLevel": "Open Beta",
+      "checklist": [
+        { "id": "chk-4", "label": "Verify Cmd+K / Ctrl+K command palette opens in all browsers", "status": "pass", "tester": "Rohan D." },
+        { "id": "chk-5", "label": "Test streaming response cancellation mid-generation", "status": "pass", "tester": "Priya N." }
+      ],
+      "createdAt": "2026-11-20T11:00:00.000Z",
+      "updatedAt": "2026-11-26T18:40:00.000Z"
+    },
+    {
+      "id": "rel-astra-020",
+      "name": "Astra Telemetry Console",
+      "slug": "astra-console",
+      "version": "v0.2.0-alpha",
+      "stage": "Alpha",
+      "health": "Issues Reported",
+      "url": "https://example.net",
+      "repoBranch": "feat/live-traces",
+      "buildHash": "7c19b44",
+      "owner": "Karthik M.",
+      "summary": "Real-time WebSocket log tailing and latency heatmap dashboard for Dwaraka Cloud edge nodes.",
+      "changelog": [
+        "Initial alpha release of WebSocket trace stream",
+        "Added P95/P99 latency sparklines per region"
+      ],
+      "tags": ["observability", "telemetry", "websocket", "internal"],
+      "accessLevel": "QA & Core Leads",
+      "checklist": [
+        { "id": "chk-6", "label": "Stress test 1,000 events/sec without UI frame drops", "status": "fail", "tester": "Meera K." },
+        { "id": "chk-7", "label": "Verify WebSocket auto-reconnect after network drop", "status": "pending", "tester": null }
+      ],
+      "createdAt": "2026-11-25T14:20:00.000Z",
+      "updatedAt": "2026-11-27T04:10:00.000Z"
+    },
+    {
+      "id": "rel-kaveri-065",
+      "name": "Kaveri Fleet & Dispatch Web",
+      "slug": "kaveri-dispatch",
+      "version": "v0.6.5-beta",
+      "stage": "Open Beta",
+      "health": "Paused",
+      "url": "https://example.com",
+      "repoBranch": "beta/kaveri-0.6.5",
+      "buildHash": "3e91a02",
+      "owner": "Sneha Iyer",
+      "summary": "Live route optimization and warehouse dock scheduling web portal for regional logistics partners.",
+      "changelog": [
+        "Added drag-and-drop dock slot reassignment",
+        "Paused temporarily pending map tile API key rotation"
+      ],
+      "tags": ["logistics", "maps", "scheduling"],
+      "accessLevel": "Beta Team Only",
+      "checklist": [
+        { "id": "chk-8", "label": "Test CSV manifest bulk import with 500 rows", "status": "pass", "tester": "Vikram S." }
+      ],
+      "createdAt": "2026-11-18T08:00:00.000Z",
+      "updatedAt": "2026-11-26T10:00:00.000Z"
+    }
+  ],
+  "feedback": [
+    {
+      "id": "fb-101",
+      "releaseId": "rel-astra-020",
+      "releaseName": "Astra Telemetry Console",
+      "releaseVersion": "v0.2.0-alpha",
+      "title": "UI freezes after ~40 seconds of high-throughput trace streaming",
+      "description": "When tailing the ap-south-1 node at >500 logs/sec, the DOM grows unbounded and the browser tab becomes unresponsive.",
+      "severity": "Critical",
+      "category": "Performance",
+      "status": "In Review",
+      "reporter": "Meera Krishnan",
+      "environment": "Chrome 135 / Windows 11",
+      "leadNote": "Reproduced. Switching log table to virtualized windowing in v0.2.1-alpha.",
+      "createdAt": "2026-11-26T12:15:00.000Z"
+    },
+    {
+      "id": "fb-102",
+      "releaseId": "rel-dwarakapay-042",
+      "releaseName": "DwarakaPay Checkout Web",
+      "releaseVersion": "v0.4.2-beta",
+      "title": "Submit button stays disabled if user pastes OTP instead of typing",
+      "description": "Pasting the 6-digit OTP into the first box populates all fields visually, but the form state doesn't enable the Confirm button until a keyup event fires.",
+      "severity": "High",
+      "category": "Bug",
+      "status": "Open",
+      "reporter": "Vikram Sharma",
+      "environment": "Firefox 141 / macOS",
+      "leadNote": "",
+      "createdAt": "2026-11-26T19:45:00.000Z"
+    },
+    {
+      "id": "fb-103",
+      "releaseId": "rel-vedadocs-091",
+      "releaseName": "VedaDocs AI Knowledge Portal",
+      "releaseVersion": "v0.9.1-rc1",
+      "title": "Add copy-as-cURL button on API playground code blocks",
+      "description": "Would save QA engineers a lot of time when reproducing endpoint calls locally.",
+      "severity": "Low",
+      "category": "Enhancement",
+      "status": "Fixed",
+      "reporter": "Rohan Deshmukh",
+      "environment": "Edge 135 / Windows 11",
+      "leadNote": "Shipped in v0.9.1-rc1 build f42d0e1.",
+      "createdAt": "2026-11-23T10:30:00.000Z"
+    }
+  ],
+  "team": [
+    { "id": "tm-1", "name": "Meera Krishnan", "email": "meera.k@dwarakalabs.in", "role": "QA Lead", "status": "Active", "assigned": ["All Releases"], "joinedAt": "2026-10-01" },
+    { "id": "tm-2", "name": "Vikram Sharma", "email": "vikram.s@dwarakalabs.in", "role": "Beta Tester", "status": "Active", "assigned": ["DwarakaPay Checkout Web", "Kaveri Fleet & Dispatch Web"], "joinedAt": "2026-10-12" },
+    { "id": "tm-3", "name": "Rohan Deshmukh", "email": "rohan.d@dwarakalabs.in", "role": "Beta Tester", "status": "Active", "assigned": ["VedaDocs AI Knowledge Portal"], "joinedAt": "2026-11-02" },
+    { "id": "tm-4", "name": "Ananya Verma", "email": "ananya.v@dwarakalabs.in", "role": "Stakeholder", "status": "Invited", "assigned": ["VedaDocs AI Knowledge Portal"], "joinedAt": "2026-11-24" }
+  ],
+  "activity": [
+    { "id": "act-1", "type": "release", "actor": "Arjun Rao", "message": "Published DwarakaPay Checkout Web v0.4.2-beta (Closed Beta)", "timestamp": "2026-11-26T16:15:00.000Z" },
+    { "id": "act-2", "type": "feedback", "actor": "Vikram Sharma", "message": "Reported High bug on DwarakaPay Checkout Web: OTP paste state", "timestamp": "2026-11-26T19:45:00.000Z" },
+    { "id": "act-3", "type": "lifecycle", "actor": "Sneha Iyer", "message": "Paused Kaveri Fleet & Dispatch Web v0.6.5-beta pending API key rotation", "timestamp": "2026-11-26T10:00:00.000Z" },
+    { "id": "act-4", "type": "promotion", "actor": "Priya Nair", "message": "Promoted VedaDocs AI Knowledge Portal to RC (v0.9.1-rc1)", "timestamp": "2026-11-26T18:40:00.000Z" }
+  ]
+}
