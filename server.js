@@ -1,12 +1,14 @@
 import http from 'node:http';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import os from 'node:os';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const DEFAULT_DB_PATH = path.join(__dirname, 'data', 'db.json');
+const VERCEL_TMP_DB_PATH = path.join(os.tmpdir(), 'dwaraka-beta-db.json');
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -20,14 +22,41 @@ const MIME_TYPES = {
 
 const STAGE_ORDER = ['Alpha', 'Closed Beta', 'Open Beta', 'RC', 'Deprecated'];
 
+async function ensureDbPath(dbPath) {
+  if (!process.env.VERCEL || dbPath !== DEFAULT_DB_PATH) {
+    return dbPath;
+  }
+  try {
+    await fs.access(VERCEL_TMP_DB_PATH);
+    return VERCEL_TMP_DB_PATH;
+  } catch {
+    const seedPaths = [
+      DEFAULT_DB_PATH,
+      path.join(process.cwd(), 'data', 'db.json')
+    ];
+    for (const candidate of seedPaths) {
+      try {
+        const seed = await fs.readFile(candidate, 'utf-8');
+        await fs.writeFile(VERCEL_TMP_DB_PATH, seed, 'utf-8');
+        return VERCEL_TMP_DB_PATH;
+      } catch {
+        // try next seed path
+      }
+    }
+    throw new Error('Seed database file data/db.json not found.');
+  }
+}
+
 async function readDb(dbPath) {
-  const raw = await fs.readFile(dbPath, 'utf-8');
+  const targetPath = await ensureDbPath(dbPath);
+  const raw = await fs.readFile(targetPath, 'utf-8');
   return JSON.parse(raw);
 }
 
 async function writeDb(dbPath, data) {
-  await fs.mkdir(path.dirname(dbPath), { recursive: true });
-  await fs.writeFile(dbPath, JSON.stringify(data, null, 2), 'utf-8');
+  const targetPath = await ensureDbPath(dbPath);
+  await fs.mkdir(path.dirname(targetPath), { recursive: true });
+  await fs.writeFile(targetPath, JSON.stringify(data, null, 2), 'utf-8');
 }
 
 function sendJson(res, status, payload) {
@@ -36,6 +65,12 @@ function sendJson(res, status, payload) {
 }
 
 async function readJsonBody(req) {
+  if (req.body && typeof req.body === 'object') {
+    return req.body;
+  }
+  if (typeof req.body === 'string') {
+    return req.body.trim() ? JSON.parse(req.body) : {};
+  }
   const chunks = [];
   for await (const chunk of req) {
     chunks.push(chunk);
@@ -65,7 +100,7 @@ function sanitizeUrl(urlStr) {
   return `https://${trimmed}`;
 }
 
-async function handleApi(req, res, pathname, dbPath) {
+export async function handleApi(req, res, pathname, dbPath = DEFAULT_DB_PATH) {
   try {
     if (req.method === 'GET' && pathname === '/api/health') {
       return sendJson(res, 200, { ok: true, service: 'dwaraka-beta-portal', timestamp: new Date().toISOString() });
@@ -370,17 +405,20 @@ async function serveStatic(res, pathname) {
   }
 }
 
-export function createServer(dbPath = DEFAULT_DB_PATH) {
-  return http.createServer((req, res) => {
+export function createHandler(dbPath = DEFAULT_DB_PATH) {
+  return (req, res) => {
     const urlObj = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
     const pathname = urlObj.pathname;
 
     if (pathname.startsWith('/api/')) {
-      handleApi(req, res, pathname, dbPath);
-      return;
+      return handleApi(req, res, pathname, dbPath);
     }
-    serveStatic(res, pathname);
-  });
+    return serveStatic(res, pathname);
+  };
+}
+
+export function createServer(dbPath = DEFAULT_DB_PATH) {
+  return http.createServer(createHandler(dbPath));
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
