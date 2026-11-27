@@ -86,8 +86,8 @@
   <main class="container">
     <section class="hero-strip">
       <div class="hero-copy">
-        <h1>Early-Access Beta Websites</h1>
-        <p id="hero-subtitle">Launch staging builds, run QA smoke checklists, and submit environment-tagged bug reports directly to DWARAKA engineering.</p>
+        <h1>Android Beta APK Releases</h1>
+        <p id="hero-subtitle">Upload <code>.apk</code> builds into the Git <code>apks/</code> folder and push. Mobile testers can download directly to their Android device, scan the QR code, install, and report build issues.</p>
       </div>
       <div class="kpi-grid" aria-label="Portal metrics">
         <div class="kpi-card">
@@ -176,12 +176,12 @@
     <p>&copy; 2026 DWARAKA Software Labs &middot; Internal &amp; Beta Testing Infrastructure &middot; All builds are pre-production.</p>
   </footer>
 
-  <!-- MODAL: LIVE PREVIEW & QA INSPECTOR -->
+  <!-- MODAL: APK DOWNLOAD, QR & QA INSPECTOR -->
   <dialog id="inspector-dialog" class="dialog-xl" closedby="any" aria-labelledby="inspector-title">
     <div class="dialog-header">
       <div>
         <span class="badge-row" id="inspector-badges"></span>
-        <h1 id="inspector-title">Beta Website Inspector</h1>
+        <h1 id="inspector-title">Beta APK Inspector</h1>
       </div>
       <form method="dialog">
         <button class="btn btn-ghost" value="close" aria-label="Close inspector" autofocus>Close</button>
@@ -190,21 +190,35 @@
 
     <div class="inspector-bar">
       <div class="inspector-url">
-        <span class="mono-label">TARGET URL</span>
-        <a id="inspector-external-link" href="#" target="_blank" rel="noopener noreferrer">https://example.com</a>
+        <span class="mono-label">DOWNLOAD URL</span>
+        <a id="inspector-external-link" href="#" download>https://example.com</a>
       </div>
-      <div class="viewport-switcher" role="group" aria-label="Preview viewport size">
-        <button type="button" class="pill is-active" data-vp="100%">Desktop</button>
-        <button type="button" class="pill" data-vp="768px">Tablet (768px)</button>
-        <button type="button" class="pill" data-vp="375px">Mobile (375px)</button>
+      <div class="inspector-bar-actions">
+        <a id="inspector-download-btn" class="btn btn-primary btn-sm" href="#" download>Download APK</a>
+        <button type="button" class="btn btn-outline btn-sm" id="inspector-report-bug-btn">Report Bug on Build</button>
       </div>
-      <button type="button" class="btn btn-primary btn-sm" id="inspector-report-bug-btn">Report Bug on Build</button>
     </div>
 
     <div class="inspector-body">
-      <div class="preview-stage">
-        <iframe id="inspector-iframe" title="Live beta website preview" sandbox="allow-scripts allow-forms allow-same-origin allow-popups"></iframe>
-        <p class="preview-note">Note: If the target beta site blocks embedding via <code>X-Frame-Options</code>, use the Target URL link above to test in a dedicated tab.</p>
+      <div class="apk-stage">
+        <div class="qr-card">
+          <div id="inspector-qr" class="qr-box" aria-label="QR code to download APK on mobile"></div>
+          <div class="qr-details">
+            <h2>Scan on Android to Download</h2>
+            <p class="helper-text">Point your Android phone camera at this QR code to open the direct APK download link on your device.</p>
+            <div class="apk-file-meta" id="inspector-apk-meta"></div>
+          </div>
+        </div>
+
+        <details class="install-guide" open>
+          <summary>Android Device Install &amp; Testing Steps</summary>
+          <ol class="install-steps">
+            <li>Tap <strong>Download APK</strong> on your Android phone (or scan the QR code above).</li>
+            <li>Open the downloaded <code>.apk</code> file from your browser downloads or notification shade.</li>
+            <li>If prompted, allow <strong>Install unknown apps</strong> for your browser, then tap <strong>Install</strong>.</li>
+            <li>Launch the app, verify the test cases in the <strong>QA Smoke Checklist</strong>, and use <strong>Report Bug</strong> if anything fails.</li>
+          </ol>
+        </details>
       </div>
       <aside class="inspector-sidebar">
         <section class="sidebar-block">

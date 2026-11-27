@@ -868,9 +868,85 @@ dialog::backdrop {
   white-space: nowrap;
 }
 
-.viewport-switcher {
+.inspector-bar-actions {
   display: flex;
-  gap: 0.35rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.apk-stage {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+  overflow-y: auto;
+}
+
+.qr-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1.1rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+}
+
+.qr-box {
+  background: #ffffff;
+  padding: 0.75rem;
+  border-radius: 0.65rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.qr-box svg {
+  display: block;
+  inline-size: 168px;
+  block-size: 168px;
+}
+
+.qr-details {
+  flex: 1 1 240px;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.qr-details h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.apk-file-meta {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  word-break: break-all;
+}
+
+.install-guide {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  padding: 1rem 1.15rem;
+}
+
+.install-guide summary {
+  font-weight: 700;
+  font-size: 0.92rem;
+  cursor: pointer;
+}
+
+.install-steps {
+  margin: 0.75rem 0 0;
+  padding-inline-start: 1.25rem;
+  display: grid;
+  gap: 0.45rem;
+  font-size: 0.86rem;
+  color: var(--text-muted);
 }
 
 .inspector-body {

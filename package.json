@@ -9,5 +9,8 @@
     "test": "node --test tests/server.test.js"
   },
   "author": "DWARAKA Software Labs",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "qrcode-generator": "^2.0.4"
+  }
 }

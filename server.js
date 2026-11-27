@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(__dirname, 'public');
+const APKS_DIR = path.join(__dirname, 'apks');
 const DEFAULT_DB_PATH = path.join(__dirname, 'data', 'db.json');
 const VERCEL_TMP_DB_PATH = path.join(os.tmpdir(), 'dwaraka-beta-db.json');
 
@@ -14,10 +15,12 @@ const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
   '.js': 'application/javascript; charset=utf-8',
+  '.mjs': 'application/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
-  '.ico': 'image/x-icon'
+  '.ico': 'image/x-icon',
+  '.apk': 'application/vnd.android.package-archive'
 };
 
 const STAGE_ORDER = ['Alpha', 'Closed Beta', 'Open Beta', 'RC', 'Deprecated'];
@@ -100,6 +103,111 @@ function sanitizeUrl(urlStr) {
   return `https://${trimmed}`;
 }
 
+function formatBytes(bytes) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  const idx = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)));
+  const val = bytes / 1024 ** idx;
+  return `${val.toFixed(idx === 0 ? 0 : 1)} ${units[idx]}`;
+}
+
+function parseApkFilename(filename) {
+  const base = filename.replace(/\.apk$/i, '');
+  const versionMatch = base.match(/[-_](v?\d+\.\d+(?:\.\d+)?(?:[-._][a-z0-9]+)?)$/i);
+  const version = versionMatch ? versionMatch[1] : 'v1.0.0-beta';
+  const rawName = versionMatch ? base.slice(0, versionMatch.index) : base;
+  const name = rawName.replace(/[-_]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()).trim() || base;
+  return { name, version, slug: base.toLowerCase().replace(/[^a-z0-9]+/g, '-') };
+}
+
+async function resolveApksDir() {
+  for (const dir of [APKS_DIR, path.join(process.cwd(), 'apks')]) {
+    try {
+      const st = await fs.stat(dir);
+      if (st.isDirectory()) return dir;
+    } catch {
+      // try next
+    }
+  }
+  return null;
+}
+
+async function scanApksFolder(existingReleases = []) {
+  const dir = await resolveApksDir();
+  if (!dir) return [];
+
+  const entries = await fs.readdir(dir, { withFileTypes: true });
+  const apkFiles = entries.filter((e) => e.isFile() && e.name.toLowerCase().endsWith('.apk'));
+  const scanned = [];
+
+  for (const entry of apkFiles) {
+    const filePath = path.join(dir, entry.name);
+    const stat = await fs.stat(filePath);
+    const buf = await fs.readFile(filePath);
+    const sha256 = crypto.createHash('sha256').update(buf).digest('hex');
+    const parsed = parseApkFilename(entry.name);
+
+    let sidecar = {};
+    const sidecarPath = path.join(dir, entry.name.replace(/\.apk$/i, '.json'));
+    try {
+      sidecar = JSON.parse(await fs.readFile(sidecarPath, 'utf-8'));
+    } catch {
+      // optional sidecar
+    }
+
+    const existing = existingReleases.find((r) => r.apkFile === entry.name || r.slug === parsed.slug);
+    const downloadUrl = `/apks/${encodeURIComponent(entry.name)}`;
+
+    if (existing) {
+      existing.apkFile = entry.name;
+      existing.downloadUrl = downloadUrl;
+      existing.fileSize = formatBytes(stat.size);
+      existing.sha256 = sha256;
+      existing.source = 'git-folder';
+      continue;
+    }
+
+    const checklist = Array.isArray(sidecar.checklist)
+      ? sidecar.checklist.map((label, i) => ({
+          id: `chk-${parsed.slug}-${i + 1}`,
+          label: String(label),
+          status: 'pending',
+          tester: null
+        }))
+      : [
+          { id: `chk-${parsed.slug}-1`, label: 'Download & install APK on Android device', status: 'pending', tester: null },
+          { id: `chk-${parsed.slug}-2`, label: 'Verify cold launch & core user flow', status: 'pending', tester: null }
+        ];
+
+    scanned.push({
+      id: `apk-${parsed.slug}`,
+      name: sidecar.name || parsed.name,
+      slug: parsed.slug,
+      version: sidecar.version || parsed.version,
+      stage: STAGE_ORDER.includes(sidecar.stage) ? sidecar.stage : 'Closed Beta',
+      health: sidecar.health || 'Healthy',
+      apkFile: entry.name,
+      downloadUrl,
+      url: downloadUrl,
+      fileSize: formatBytes(stat.size),
+      sha256,
+      source: 'git-folder',
+      repoBranch: sidecar.repoBranch || 'main',
+      buildHash: sha256.slice(0, 7),
+      owner: sidecar.owner || 'DWARAKA Mobile Team',
+      summary: sidecar.summary || `Auto-detected Android beta APK (${entry.name}) ready for device download and QA testing.`,
+      changelog: Array.isArray(sidecar.changelog) ? sidecar.changelog : [`Uploaded ${entry.name} via Git apks/ folder`],
+      tags: Array.isArray(sidecar.tags) ? sidecar.tags : ['android', 'apk', 'mobile-beta'],
+      accessLevel: sidecar.accessLevel || 'Beta Team Only',
+      checklist,
+      createdAt: stat.birthtime?.toISOString?.() || stat.mtime.toISOString(),
+      updatedAt: stat.mtime.toISOString()
+    });
+  }
+
+  return scanned;
+}
+
 export async function handleApi(req, res, pathname, dbPath = DEFAULT_DB_PATH) {
   try {
     if (req.method === 'GET' && pathname === '/api/health') {
@@ -108,6 +216,11 @@ export async function handleApi(req, res, pathname, dbPath = DEFAULT_DB_PATH) {
 
     if (req.method === 'GET' && pathname === '/api/state') {
       const db = await readDb(dbPath);
+      const discovered = await scanApksFolder(db.releases);
+      if (discovered.length > 0) {
+        db.releases = [...discovered, ...db.releases];
+        await writeDb(dbPath, db);
+      }
       const { adminPin, ...publicSettings } = db.settings;
       return sendJson(res, 200, {
         settings: publicSettings,
@@ -412,6 +525,35 @@ async function serveStatic(res, pathname) {
   res.end('Not Found');
 }
 
+async function serveApk(res, pathname) {
+  const dir = await resolveApksDir();
+  if (!dir) {
+    res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('APKs folder not found');
+    return;
+  }
+  const filename = decodeURIComponent(pathname.slice('/apks/'.length));
+  const resolved = path.resolve(dir, filename);
+  if (!resolved.startsWith(dir) || !filename.toLowerCase().endsWith('.apk')) {
+    res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('Forbidden');
+    return;
+  }
+  try {
+    const stat = await fs.stat(resolved);
+    const content = await fs.readFile(resolved);
+    res.writeHead(200, {
+      'Content-Type': 'application/vnd.android.package-archive',
+      'Content-Disposition': `attachment; filename="${path.basename(resolved)}"`,
+      'Content-Length': stat.size
+    });
+    res.end(content);
+  } catch {
+    res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('APK Not Found');
+  }
+}
+
 export function createHandler(dbPath = DEFAULT_DB_PATH) {
   return (req, res) => {
     const urlObj = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
@@ -419,6 +561,9 @@ export function createHandler(dbPath = DEFAULT_DB_PATH) {
 
     if (pathname.startsWith('/api/')) {
       return handleApi(req, res, pathname, dbPath);
+    }
+    if (pathname.startsWith('/apks/')) {
+      return serveApk(res, pathname);
     }
     return serveStatic(res, pathname);
   };

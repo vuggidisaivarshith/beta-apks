@@ -140,4 +140,26 @@ describe('DWARAKA Software Labs Beta Portal API', () => {
     assert.equal(updated.status, 'Fixed');
     assert.equal(updated.leadNote, 'Fixed flex-wrap in header');
   });
+
+  it('auto-discovers and serves .apk files from apks/ with Android MIME type', async () => {
+    const apkDir = path.resolve('apks');
+    const testApkPath = path.join(apkDir, 'DwarakaTest-v0.1.0-beta.apk');
+    await fs.writeFile(testApkPath, Buffer.from('PK\x03\x04dummy-apk-bytes'));
+    try {
+      const stateRes = await fetch(`${baseUrl}/api/state`);
+      assert.equal(stateRes.status, 200);
+      const { releases } = await stateRes.json();
+      const found = releases.find((r) => r.apkFile === 'DwarakaTest-v0.1.0-beta.apk');
+      assert.ok(found, 'Expected auto-detected APK release in state');
+      assert.equal(found.source, 'git-folder');
+      assert.equal(found.downloadUrl, '/apks/DwarakaTest-v0.1.0-beta.apk');
+
+      const dlRes = await fetch(`${baseUrl}${found.downloadUrl}`);
+      assert.equal(dlRes.status, 200);
+      assert.equal(dlRes.headers.get('content-type'), 'application/vnd.android.package-archive');
+      assert.match(dlRes.headers.get('content-disposition'), /attachment; filename="DwarakaTest-v0\.1\.0-beta\.apk"/);
+    } finally {
+      await fs.rm(testApkPath, { force: true });
+    }
+  });
 });

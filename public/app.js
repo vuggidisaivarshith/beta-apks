@@ -1,3 +1,5 @@
+import qrcode from '/vendor/qrcode.mjs';
+
 const THEME_LABELS = {
   obsidian: 'Obsidian',
   daylight: 'Daylight',
@@ -179,6 +181,8 @@ function renderReleases() {
 
         <div class="tag-list">
           <span class="tag mono">#${esc(rel.buildHash)}</span>
+          ${rel.fileSize ? `<span class="tag mono">${esc(rel.fileSize)}</span>` : ''}
+          ${rel.source === 'git-folder' ? `<span class="tag">Git apks/</span>` : ''}
           <span class="tag">${esc(rel.accessLevel)}</span>
           ${(rel.tags || []).map((t) => `<span class="tag">${esc(t)}</span>`).join('')}
         </div>
@@ -194,8 +198,8 @@ function renderReleases() {
         </div>
 
         <div class="card-actions">
-          <button type="button" class="btn btn-primary btn-sm" data-action="inspect" data-id="${esc(rel.id)}">Launch &amp; Inspect</button>
-          <a class="btn btn-outline btn-sm" href="${esc(rel.url)}" target="_blank" rel="noopener noreferrer">Open Tab</a>
+          <a class="btn btn-primary btn-sm" href="${esc(rel.downloadUrl || rel.url)}" ${rel.downloadUrl || String(rel.url).endsWith('.apk') ? 'download' : 'target="_blank" rel="noopener noreferrer"'}>Download APK</a>
+          <button type="button" class="btn btn-outline btn-sm" data-action="inspect" data-id="${esc(rel.id)}">QR &amp; QA</button>
           <button type="button" class="btn btn-ghost btn-sm" data-action="report-bug" data-id="${esc(rel.id)}">Report Bug</button>
         </div>
 
@@ -344,25 +348,51 @@ function renderAll() {
 }
 
 // --- Inspector Modal ---
-function populateInspector(releaseId, reloadFrame = true) {
+function renderQrSvg(targetUrl) {
+  const qr = qrcode(0, 'M');
+  qr.addData(targetUrl);
+  qr.make();
+  return qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
+}
+
+function populateInspector(releaseId) {
   const rel = state.releases.find((r) => r.id === releaseId);
   if (!rel) return;
   state.inspectedReleaseId = rel.id;
+
+  const targetHref = rel.downloadUrl || rel.url;
+  const absoluteUrl = new URL(targetHref, window.location.origin).href;
 
   $('#inspector-title').textContent = `${rel.name} (${rel.version})`;
   $('#inspector-badges').innerHTML = `
     <span class="badge badge-stage">${esc(rel.stage)}</span>
     <span class="badge ${healthBadgeClass(rel.health)}">${esc(rel.health)}</span>
     <span class="badge badge-neutral mono">#${esc(rel.buildHash)}</span>
+    ${rel.fileSize ? `<span class="badge badge-neutral mono">${esc(rel.fileSize)}</span>` : ''}
   `;
 
   const link = $('#inspector-external-link');
-  link.href = rel.url;
-  link.textContent = rel.url;
+  link.href = targetHref;
+  link.textContent = absoluteUrl;
 
-  if (reloadFrame) {
-    $('#inspector-iframe').src = rel.url;
+  const dlBtn = $('#inspector-download-btn');
+  dlBtn.href = targetHref;
+  if (rel.apkFile || String(targetHref).endsWith('.apk')) {
+    dlBtn.setAttribute('download', rel.apkFile || '');
+    dlBtn.removeAttribute('target');
+    dlBtn.textContent = 'Download APK';
+  } else {
+    dlBtn.removeAttribute('download');
+    dlBtn.setAttribute('target', '_blank');
+    dlBtn.textContent = 'Open Build';
   }
+
+  $('#inspector-qr').innerHTML = renderQrSvg(absoluteUrl);
+  $('#inspector-apk-meta').innerHTML = `
+    ${rel.apkFile ? `<div><strong>File:</strong> <code>${esc(rel.apkFile)}</code></div>` : ''}
+    ${rel.fileSize ? `<div><strong>Size:</strong> ${esc(rel.fileSize)}</div>` : ''}
+    ${rel.sha256 ? `<div><strong>SHA-256:</strong> <code>${esc(rel.sha256)}</code></div>` : ''}
+  `;
 
   const checklistEl = $('#inspector-checklist');
   if (!rel.checklist || !rel.checklist.length) {
@@ -601,14 +631,6 @@ function bindEvents() {
     $('#release-dialog').close();
     await loadState();
   });
-
-  // Inspector viewport switcher & checklist updates
-  for (const vpBtn of $$('[data-vp]')) {
-    vpBtn.addEventListener('click', () => {
-      for (const b of $$('[data-vp]')) b.classList.toggle('is-active', b === vpBtn);
-      $('#inspector-iframe').style.setProperty('--preview-width', vpBtn.dataset.vp);
-    });
-  }
 
   $('#inspector-report-bug-btn').addEventListener('click', () => {
     const id = state.inspectedReleaseId;
